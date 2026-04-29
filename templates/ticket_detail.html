@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Ticket #{{ ticket.id }}{% endblock %}
+{% block breadcrumb %}Tickets / #{{ ticket.id }}{% endblock %}
+{% block page_title %}Ticket #{{ ticket.id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.ticket-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+.msg { padding: 12px 16px; border-radius: 10px; margin-bottom: 12px; max-width: 85%; }
+.msg-agent { background: rgba(233,30,140,.1); border: 1px solid rgba(233,30,140,.2); margin-left: auto; }
+.msg-ai { background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.2); margin-left: auto; }
+.msg-system { background: var(--surface2); border: 1px solid var(--border); }
+.msg-sender { font-size:.7rem; color:var(--muted); font-family:'DM Mono'; margin-bottom:4px; }
+.msg-text { font-size:.875rem; line-height:1.5; }
+.msg-time { font-size:.65rem; color:var(--muted); margin-top:4px; text-align:right; }
+.chat-box { max-height: 400px; overflow-y: auto; padding: 4px; }
+.ai-suggestion { background: rgba(124,58,237,.08); border: 1px solid rgba(124,58,237,.3); border-radius:10px; padding:14px; font-size:.85rem; line-height:1.6; white-space:pre-wrap; display:none; margin-bottom:12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ticket-layout">
+  <div>
+    <!-- Info header -->
+    <div class="card mb-24">
+      <div class="card-header">
+        <div>
+          <h3>{{ ticket.title }}</h3>
+          <div class="text-muted" style="margin-top:2px;font-size:.8rem">{{ ticket.customer_name }} · {{ ticket.customer_email }}</div>
+        </div>
+        <div class="flex gap-8">
+          <span class="badge badge-{{ ticket.status }}">{{ ticket.status|replace('_',' ') }}</span>
+          <span class="badge badge-{{ ticket.priority }}">{{ ticket.priority }}</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <p style="font-size:.9rem;line-height:1.7;color:#ccc">{{ ticket.description }}</p>
+        <div class="text-muted font-mono" style="margin-top:12px;font-size:.75rem">
+          Categoría: {{ ticket.category }} · Creado: {{ ticket.created_at[:16] }} · Agente: {{ ticket.agent or 'Sin asignar' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Conversación</h3>
+        <button class="btn btn-ai btn-sm" onclick="getAiSuggestion()" id="ai-btn">✨ Sugerir respuesta IA</button>
+      </div>
+      <div class="card-body">
+        <div class="chat-box" id="chat-box">
+          {% if not messages %}
+          <div class="empty" style="padding:30px">Sin mensajes aún</div>
+          {% endif %}
+          {% for m in messages %}
+          <div class="msg msg-{{ m.sender_type }}{% if m.is_ai %} msg-ai{% endif %}">
+            <div class="msg-sender">{{ m.sender }}{% if m.is_ai %} · IA{% endif %}</div>
+            <div class="msg-text">{{ m.message }}</div>
+            <div class="msg-time">{{ m.created_at[11:16] }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="ai-suggestion" id="ai-suggestion"></div>
+
+        <form method="POST" action="{{ url_for('ticket_message', tid=ticket.id) }}" style="margin-top:12px">
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <textarea class="form-control" name="message" id="msg-input" placeholder="Escribe tu respuesta al cliente..." style="min-height:64px;flex:1" required></textarea>
+            <button type="submit" class="btn btn-primary">Enviar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header"><h3>Actualizar</h3></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select class="form-control" id="sel-status" onchange="updateTicket('status', this.value)">
+            <option value="open" {{ 'selected' if ticket.status=='open' }}>Abierto</option>
+            <option value="in_progress" {{ 'selected' if ticket.status=='in_progress' }}>En progreso</option>
+            <option value="resolved" {{ 'selected' if ticket.status=='resolved' }}>Resuelto</option>
+            <option value="cancelled" {{ 'selected' if ticket.status=='cancelled' }}>Cancelado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridad</label>
+          <select class="form-control" id="sel-priority" onchange="updateTicket('priority', this.value)">
+            <option value="low" {{ 'selected' if ticket.priority=='low' }}>Baja</option>
+            <option value="medium" {{ 'selected' if ticket.priority=='medium' }}>Media</option>
+            <option value="high" {{ 'selected' if ticket.priority=='high' }}>Alta</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Info del cliente</h3></div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:.85rem">
+          <div><span class="text-muted">Nombre:</span> {{ ticket.customer_name }}</div>
+          <div><span class="text-muted">Email:</span> {{ ticket.customer_email }}</div>
+          <div><span class="text-muted">Ticket #:</span> {{ ticket.id }}</div>
+          <div><span class="text-muted">Categoría:</span> {{ ticket.category }}</div>
+          <div><span class="text-muted">Creado:</span> {{ ticket.created_at[:10] }}</div>
+        </div>
+      </div>
+    </div>
+
+    <a href="{{ url_for('tickets') }}" class="btn btn-ghost">← Volver a tickets</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateTicket(field, value) {
+  fetch('/tickets/{{ ticket.id }}/update', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({[field]: value})
+  });
+}
+
+function getAiSuggestion() {
+  const btn = document.getElementById('ai-btn');
+  const box = document.getElementById('ai-suggestion');
+  btn.textContent = '⏳ Generando...';
+  btn.disabled = true;
+  box.style.display = 'none';
+
+  fetch('/tickets/{{ ticket.id }}/ai-suggest', {method:'POST'})
+    .then(r => r.json())
+    .then(data => {
+      box.textContent = data.suggestion;
+      box.style.display = 'block';
+      btn.textContent = '✨ Sugerir respuesta IA';
+      btn.disabled = false;
+      // Copiar al textarea
+      document.getElementById('msg-input').value = data.suggestion;
+    })
+    .catch(() => {
+      btn.textContent = '✨ Sugerir respuesta IA';
+      btn.disabled = false;
+    });
+}
+
+// Scroll to bottom
+const cb = document.getElementById('chat-box');
+if(cb) cb.scrollTop = cb.scrollHeight;
+</script>
+{% endblock %}

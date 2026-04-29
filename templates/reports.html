@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
+{% block breadcrumb %}Reportes{% endblock %}
+{% block page_title %}Reportes & Estadísticas{% endblock %}
+
+{% block extra_css %}
+<style>
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.chart-card h3 { font-family: 'Syne'; font-size: .9rem; font-weight: 700; margin-bottom: 16px; }
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+canvas { max-height: 220px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="charts-grid">
+  <div class="chart-card">
+    <h3>Tickets por estado</h3>
+    <canvas id="c-status"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Tickets por prioridad</h3>
+    <canvas id="c-priority"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Pedidos por estado</h3>
+    <canvas id="c-orders"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Tickets por categoría</h3>
+    <canvas id="c-category"></canvas>
+  </div>
+</div>
+<div class="charts-row">
+  <div class="chart-card">
+    <h3>Tickets últimos 7 días</h3>
+    <canvas id="c-daily"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Top agentes</h3>
+    <canvas id="c-agents"></canvas>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const ACCENT = '#e91e8c';
+const PALETTE = ['#e91e8c','#7c3aed','#3b82f6','#10b981','#f59e0b','#ef4444'];
+const defaults = {
+  plugins: { legend: { labels: { color: '#9999bb', font: { family: 'DM Mono', size: 11 } } } },
+  scales: {
+    x: { ticks: { color: '#6b6b8a', font: { family: 'DM Mono', size: 10 } }, grid: { color: '#2a2a3a' } },
+    y: { ticks: { color: '#6b6b8a', font: { family: 'DM Mono', size: 10 } }, grid: { color: '#2a2a3a' } }
+  }
+};
+
+// Status doughnut
+new Chart(document.getElementById('c-status'), {
+  type: 'doughnut',
+  data: {
+    labels: [{% for s in by_status %}'{{ s.status }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{ data: [{% for s in by_status %}{{ s.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: PALETTE, borderColor: '#111118', borderWidth: 2 }]
+  },
+  options: { plugins: defaults.plugins, cutout: '65%' }
+});
+
+// Priority bar
+new Chart(document.getElementById('c-priority'), {
+  type: 'bar',
+  data: {
+    labels: [{% for p in by_priority %}'{{ p.priority }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{ label: 'Tickets', data: [{% for p in by_priority %}{{ p.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: ['#ef4444','#f59e0b','#10b981'], borderRadius: 6 }]
+  },
+  options: { ...defaults, plugins: defaults.plugins }
+});
+
+// Orders doughnut
+new Chart(document.getElementById('c-orders'), {
+  type: 'doughnut',
+  data: {
+    labels: [{% for o in orders_by_status %}'{{ o.status }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{ data: [{% for o in orders_by_status %}{{ o.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: PALETTE, borderColor: '#111118', borderWidth: 2 }]
+  },
+  options: { plugins: defaults.plugins, cutout: '65%' }
+});
+
+// Category bar
+new Chart(document.getElementById('c-category'), {
+  type: 'bar',
+  data: {
+    labels: [{% for c in by_category %}'{{ c.category }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{ label: 'Tickets', data: [{% for c in by_category %}{{ c.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: '#7c3aed', borderRadius: 6 }]
+  },
+  options: { ...defaults, plugins: defaults.plugins }
+});
+
+// Daily line
+new Chart(document.getElementById('c-daily'), {
+  type: 'line',
+  data: {
+    labels: [{% for d in daily %}'{{ d.day }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{ label: 'Tickets', data: [{% for d in daily %}{{ d.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+      borderColor: ACCENT, backgroundColor: 'rgba(233,30,140,.1)', fill: true,
+      tension: 0.4, pointBackgroundColor: ACCENT }]
+  },
+  options: { ...defaults, plugins: defaults.plugins }
+});
+
+// Top agents horizontal bar
+new Chart(document.getElementById('c-agents'), {
+  type: 'bar',
+  data: {
+    labels: [{% for a in top_agents %}'{{ a.username }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [
+      { label: 'Resueltos', data: [{% for a in top_agents %}{{ a.resolved }}{% if not loop.last %},{% endif %}{% endfor %}], backgroundColor: '#10b981', borderRadius: 4 },
+      { label: 'Total', data: [{% for a in top_agents %}{{ a.total }}{% if not loop.last %},{% endif %}{% endfor %}], backgroundColor: '#3b82f6', borderRadius: 4 }
+    ]
+  },
+  options: { ...defaults, plugins: defaults.plugins, indexAxis: 'y' }
+});
+</script>
+{% endblock %}

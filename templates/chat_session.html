@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Chat — {{ chat_session.customer_name }}{% endblock %}
+{% block breadcrumb %}Chat / {{ chat_session.customer_name }}{% endblock %}
+{% block page_title %}{{ chat_session.customer_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.chat-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; height: calc(100vh - 180px); }
+.chat-area { display: flex; flex-direction: column; }
+.chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.msg-row { display: flex; gap: 10px; }
+.msg-row.agent-msg { flex-direction: row-reverse; }
+.bubble { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: .875rem; line-height: 1.5; }
+.bubble-agent { background: var(--accent); color: white; border-radius: 12px 12px 2px 12px; }
+.bubble-customer { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px 12px 12px 2px; }
+.bubble-ai { background: rgba(124,58,237,.15); border: 1px solid rgba(124,58,237,.3); border-radius: 12px 12px 12px 2px; }
+.msg-meta { font-size:.65rem; color:var(--muted); margin-top:3px; font-family:'DM Mono'; }
+.chat-input-area { padding: 16px; border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-layout">
+  <div class="card chat-area">
+    <div class="card-header" style="flex-shrink:0">
+      <div>
+        <h3>{{ chat_session.customer_name }}</h3>
+        <div class="text-muted font-mono" style="font-size:.7rem">{{ chat_session.customer_email }}</div>
+      </div>
+      <div class="flex gap-8">
+        <span class="badge badge-{{ 'open' if chat_session.status=='active' else 'resolved' }}">{{ chat_session.status }}</span>
+        <button class="btn btn-ai btn-sm" onclick="getAIReply()">✨ Respuesta IA</button>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      {% for m in messages %}
+      <div class="msg-row {{ 'agent-msg' if m.sender != chat_session.customer_name else '' }}">
+        <div class="bubble {{ 'bubble-agent' if m.sender != chat_session.customer_name else ('bubble-ai' if m.is_ai else 'bubble-customer') }}">
+          <div class="msg-meta">{{ m.sender }}</div>
+          {{ m.message }}
+          <div class="msg-meta" style="text-align:right">{{ m.created_at[11:16] }}</div>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty">Inicia la conversación</div>
+      {% endfor %}
+      <div id="typing-indicator" style="display:none" class="msg-row">
+        <div class="bubble bubble-ai" style="opacity:.7;font-style:italic">IA escribiendo…</div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <form method="POST" action="{{ url_for('chat_reply', session_id=chat_session.session_id) }}">
+        <div class="flex gap-8">
+          <input class="form-control" name="message" id="reply-input" placeholder="Escribe un mensaje..." required>
+          <button type="submit" class="btn btn-primary">Enviar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header"><h3>Cliente</h3></div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:.85rem">
+          <div><span class="text-muted">Nombre:</span><br>{{ chat_session.customer_name }}</div>
+          <div><span class="text-muted">Email:</span><br><span class="font-mono" style="font-size:.75rem">{{ chat_session.customer_email }}</span></div>
+          <div><span class="text-muted">Inicio:</span><br>{{ chat_session.created_at[:16] }}</div>
+          <div><span class="text-muted">Estado:</span><br><span class="badge badge-{{ 'open' if chat_session.status=='active' else 'resolved' }}">{{ chat_session.status }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Asistente IA</h3></div>
+      <div class="card-body">
+        <p class="text-muted" style="font-size:.8rem;line-height:1.5">Haz clic en <strong style="color:var(--text)">✨ Respuesta IA</strong> para que LLaMA 3 genere automáticamente una respuesta basada en el historial del chat.</p>
+      </div>
+    </div>
+
+    <a href="{{ url_for('chat') }}" class="btn btn-ghost">← Volver</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const sessionId = '{{ chat_session.session_id }}';
+const customerName = '{{ chat_session.customer_name }}';
+
+function scrollBottom() {
+  const c = document.getElementById('chat-messages');
+  c.scrollTop = c.scrollHeight;
+}
+scrollBottom();
+
+function getAIReply() {
+  const messages = [];
+  {% for m in messages %}
+  messages.push({ sender: '{{ m.sender }}', message: `{{ m.message|replace('`','\\`')|replace('\n',' ') }}` });
+  {% endfor %}
+
+  document.getElementById('typing-indicator').style.display = 'flex';
+  scrollBottom();
+
+  fetch('/api/chat/ai', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ session_id: sessionId, customer: customerName, history: messages })
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('typing-indicator').style.display = 'none';
+    document.getElementById('reply-input').value = data.reply;
+    scrollBottom();
+  })
+  .catch(() => { document.getElementById('typing-indicator').style.display = 'none'; });
+}
+</script>
+{% endblock %}

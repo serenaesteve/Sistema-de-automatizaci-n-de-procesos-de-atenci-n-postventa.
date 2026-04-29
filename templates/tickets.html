@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Tickets — PostVenta{% endblock %}
+{% block breadcrumb %}Tickets{% endblock %}
+{% block page_title %}Gestión de Tickets{% endblock %}
+{% block topbar_actions %}
+<a href="{{ url_for('new_ticket') }}" class="btn btn-primary">+ Nuevo ticket</a>
+{% endblock %}
+
+{% block content %}
+<div class="filters">
+  <a href="{{ url_for('tickets') }}" class="filter-btn {{ 'active' if status=='all' }}">Todos</a>
+  <a href="{{ url_for('tickets', status='open') }}" class="filter-btn {{ 'active' if status=='open' }}">Abiertos</a>
+  <a href="{{ url_for('tickets', status='in_progress') }}" class="filter-btn {{ 'active' if status=='in_progress' }}">En progreso</a>
+  <a href="{{ url_for('tickets', status='resolved') }}" class="filter-btn {{ 'active' if status=='resolved' }}">Resueltos</a>
+  <span style="margin:0 4px;color:var(--border)">|</span>
+  <a href="{{ url_for('tickets', priority='high') }}" class="filter-btn {{ 'active' if priority=='high' }}">🔴 Alta</a>
+  <a href="{{ url_for('tickets', priority='medium') }}" class="filter-btn {{ 'active' if priority=='medium' }}">🟡 Media</a>
+  <a href="{{ url_for('tickets', priority='low') }}" class="filter-btn {{ 'active' if priority=='low' }}">🟢 Baja</a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Título</th><th>Cliente</th><th>Categoría</th>
+          <th>Estado</th><th>Prioridad</th><th>Agente</th><th>Fecha</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for t in tickets %}
+      <tr>
+        <td class="font-mono text-muted">{{ t.id }}</td>
+        <td>
+          <div style="font-weight:500">{{ t.title[:40] }}{% if t.title|length > 40 %}…{% endif %}</div>
+          <div class="text-muted" style="font-size:.75rem">{{ t.description[:50] }}…</div>
+        </td>
+        <td>
+          <div style="font-size:.85rem">{{ t.customer_name }}</div>
+          <div class="text-muted font-mono" style="font-size:.7rem">{{ t.customer_email }}</div>
+        </td>
+        <td><span class="badge badge-agent">{{ t.category }}</span></td>
+        <td><span class="badge badge-{{ t.status }}">{{ t.status|replace('_',' ') }}</span></td>
+        <td><span class="badge badge-{{ t.priority }}">{{ t.priority }}</span></td>
+        <td>{{ t.agent or '—' }}</td>
+        <td class="font-mono text-muted" style="font-size:.75rem">{{ t.created_at[:10] }}</td>
+        <td><a href="{{ url_for('ticket_detail', tid=t.id) }}" class="btn btn-ghost btn-sm">Ver →</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9"><div class="empty">No hay tickets</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

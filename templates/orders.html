@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Pedidos — PostVenta{% endblock %}
+{% block breadcrumb %}Pedidos{% endblock %}
+{% block page_title %}Seguimiento de Pedidos{% endblock %}
+{% block topbar_actions %}
+<a href="{{ url_for('new_order') }}" class="btn btn-primary">+ Nuevo pedido</a>
+{% endblock %}
+
+{% block content %}
+<div class="filters">
+  <a href="{{ url_for('orders') }}" class="filter-btn {{ 'active' if status=='all' }}">Todos</a>
+  <a href="{{ url_for('orders', status='processing') }}" class="filter-btn {{ 'active' if status=='processing' }}">Procesando</a>
+  <a href="{{ url_for('orders', status='shipped') }}" class="filter-btn {{ 'active' if status=='shipped' }}">Enviados</a>
+  <a href="{{ url_for('orders', status='delivered') }}" class="filter-btn {{ 'active' if status=='delivered' }}">Entregados</a>
+  <a href="{{ url_for('orders', status='cancelled') }}" class="filter-btn {{ 'active' if status=='cancelled' }}">Cancelados</a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Nº Pedido</th><th>Cliente</th><th>Producto</th><th>Importe</th><th>Estado</th><th>Tracking</th><th>Entrega est.</th><th></th></tr>
+      </thead>
+      <tbody>
+      {% for o in orders %}
+      <tr>
+        <td class="font-mono" style="font-size:.8rem;color:#e91e8c">{{ o.order_number }}</td>
+        <td>
+          <div style="font-size:.85rem;font-weight:500">{{ o.customer_name }}</div>
+          <div class="text-muted font-mono" style="font-size:.7rem">{{ o.customer_email }}</div>
+        </td>
+        <td style="font-size:.85rem">{{ o.product }}</td>
+        <td style="font-family:'DM Mono';font-size:.85rem">{{ "%.2f"|format(o.amount) }} €</td>
+        <td><span class="badge badge-{{ o.status }}">{{ o.status }}</span></td>
+        <td class="font-mono text-muted" style="font-size:.75rem">{{ o.tracking_number or '—' }}</td>
+        <td class="text-muted" style="font-size:.8rem">{{ o.estimated_delivery or '—' }}</td>
+        <td><a href="{{ url_for('order_detail', oid=o.id) }}" class="btn btn-ghost btn-sm">Editar</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8"><div class="empty">Sin pedidos</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

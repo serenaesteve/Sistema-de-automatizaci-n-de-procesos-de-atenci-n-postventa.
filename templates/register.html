@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro — PostVenta</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#111118;--border:#2a2a3a;--accent:#e91e8c;--text:#f0f0f8;--muted:#6b6b8a;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+body::before{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 30% 20%,rgba(233,30,140,.08) 0%,transparent 50%);pointer-events:none;}
+.wrap{width:100%;max-width:420px;padding:20px;}
+.brand{text-align:center;margin-bottom:32px;}
+.brand h1{font-family:'Syne';font-size:2rem;font-weight:800;}
+.brand h1 span{color:var(--accent);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;}
+.card h2{font-family:'Syne';font-size:1.1rem;margin-bottom:24px;}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:.75rem;color:var(--muted);font-family:'DM Mono';margin-bottom:6px;}
+.form-control{width:100%;padding:11px 14px;background:#1a1a24;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans';font-size:.875rem;transition:border-color .15s;}
+.form-control:focus{outline:none;border-color:var(--accent);}
+.btn{display:block;width:100%;padding:12px;border-radius:8px;border:none;cursor:pointer;font-family:'DM Sans';font-size:.9rem;font-weight:600;background:var(--accent);color:white;transition:background .15s;}
+.btn:hover{background:#d01679;}
+.link{text-align:center;margin-top:16px;font-size:.8rem;color:var(--muted);}
+.link a{color:var(--accent);text-decoration:none;}
+.alert{padding:10px 14px;border-radius:8px;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);font-size:.8rem;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><h1>Post<span>Venta</span></h1></div>
+  <div class="card">
+    <h2>Crear cuenta</h2>
+    {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+    <form method="POST">
+      <div class="form-group">
+        <label class="form-label">Usuario</label>
+        <input class="form-control" name="username" placeholder="mi_usuario" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-control" type="email" name="email" placeholder="correo@empresa.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input class="form-control" type="password" name="password" placeholder="••••••••" required>
+      </div>
+      <button class="btn">Registrarse</button>
+    </form>
+    <div class="link">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Agentes{% endblock %}
+{% block breadcrumb %}Agentes{% endblock %}
+{% block page_title %}Panel de Agentes{% endblock %}
+{% block topbar_actions %}
+<button class="btn btn-primary" onclick="document.getElementById('new-modal').classList.add('open')">+ Nuevo agente</button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Tickets abiertos</th><th>Resueltos</th><th>Registro</th><th></th></tr>
+      </thead>
+      <tbody>
+      {% for a in agents %}
+      <tr>
+        <td>
+          <div class="flex items-center gap-8">
+            <div class="avatar" style="width:28px;height:28px;font-size:.65rem">{{ a.username[0]|upper }}</div>
+            <strong style="font-size:.875rem">{{ a.username }}</strong>
+          </div>
+        </td>
+        <td class="font-mono text-muted" style="font-size:.8rem">{{ a.email }}</td>
+        <td><span class="badge badge-{{ a.role }}">{{ a.role }}</span></td>
+        <td>
+          <span style="font-family:'DM Mono';font-size:.875rem;color:{% if a.open_tickets > 5 %}var(--danger){% else %}var(--text){% endif %}">
+            {{ a.open_tickets }}
+          </span>
+        </td>
+        <td class="font-mono" style="font-size:.875rem;color:var(--success)">{{ a.resolved_tickets }}</td>
+        <td class="text-muted" style="font-size:.8rem">{{ a.created_at[:10] }}</td>
+        <td>
+          {% if a.id != 1 %}
+          <form method="POST" action="{{ url_for('delete_agent', uid=a.id) }}" onsubmit="return confirm('¿Eliminar agente {{ a.username }}?')">
+            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-overlay" id="new-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <h2>Nuevo agente</h2>
+    <form method="POST" action="{{ url_for('new_agent') }}">
+      <div class="form-group">
+        <label class="form-label">Usuario</label>
+        <input class="form-control" name="username" required placeholder="nuevo_agente">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-control" type="email" name="email" required placeholder="agente@empresa.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input class="form-control" type="password" name="password" required placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Rol</label>
+        <select class="form-control" name="role">
+          <option value="agent">Agente</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="flex gap-8">
+        <button type="submit" class="btn btn-primary">Crear agente</button>
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('new-modal').classList.remove('open')">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
